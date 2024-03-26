@@ -86,7 +86,8 @@ int main(int argc, char *argv[])
         char buf[1024];
         struct sockaddr_in from;
         socklen_t fromlen = sizeof(from);
-        if (recvfrom(sockfd, buf, sizeof(buf), 0, (struct sockaddr *)&from, &fromlen) <= 0)
+        
+        if ((recv_pkt_size = recvfrom(sockfd, buf, sizeof(buf), 0, (struct sockaddr *)&from, &fromlen)) <= 0)
         {
             fprintf(stderr, "Error receiving packet from %s\n", ip);
             freeaddrinfo(res);
@@ -95,7 +96,7 @@ int main(int argc, char *argv[])
         else
         {
             gettimeofday(&end_time, NULL);
-            printf("Received from %s (%s): icmp_seq=%d time=%dms\n", inet_ntoa(from.sin_addr), ip, received++, (end_time.tv_usec - start_time.tv_usec) / 1000);
+            printf("%zd bytes received from %s (%s): icmp_seq=%d time(RTT)=%dms\n", recv_pkt_size, inet_ntoa(from.sin_addr), ip, received++, (end_time.tv_usec - start_time.tv_usec) / 1000);
         }
         sleep(PING_SLEEP_RATE);
     }
