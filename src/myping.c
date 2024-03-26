@@ -95,7 +95,7 @@ int main(int argc, char *argv[])
         else
         {
             gettimeofday(&end_time, NULL);
-            printf("Received from %s (%s): icmp_seq=%d time=%dms\n", inet_ntoa(from.sin_addr), received++, (end_time.tv_usec - start_time.tv_usec) / 1000);
+            printf("Received from %s (%s): icmp_seq=%d time=%dms\n", inet_ntoa(from.sin_addr), ip, received++, (end_time.tv_usec - start_time.tv_usec) / 1000);
         }
         sleep(PING_SLEEP_RATE);
     }
