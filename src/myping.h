@@ -22,6 +22,7 @@
 int pingloop = 1;
 int transmitted = 0;
 int received = 0;
+ssize_t recv_pkt_size = 0;
 
 typedef struct ping_pkt {
     struct icmp hdr;
