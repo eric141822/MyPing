@@ -6,9 +6,9 @@ ping_pkt_t prepare_pkt()
     memset(&pkt, 0, sizeof(pkt));
     pkt.hdr.icmp_type = ICMP_ECHO;
     pkt.hdr.icmp_hun.ih_idseq.icd_id = getpid(); // identifier
-    for (int i = 0; i < sizeof(pkt.msg) - 1; i++)
-        pkt.msg[i] = i + '0';
-    pkt.msg[sizeof(pkt.msg) - 1] = 0; // null end.
+    for (int i = 0; i < sizeof(pkt.msg); i++)
+        pkt.msg[i] = '0';
+
     pkt.hdr.icmp_hun.ih_idseq.icd_seq = transmitted++;
     pkt.hdr.icmp_cksum = checksum(&pkt, sizeof(pkt));
     return pkt;
@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    struct sockaddr_in *dest = (struct sockaddr_in *) res->ai_addr;
+    struct sockaddr_in *dest = (struct sockaddr_in *)res->ai_addr;
     socklen_t destlen = res->ai_addrlen;
 
     int sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
@@ -69,11 +69,15 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+    struct timeval timeout = {MAX_TIMEOUT, 0};
+    setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(timeout));
+
     while (pingloop)
     {
         ping_pkt_t pkt = prepare_pkt();
 
         struct timeval start_time, end_time;
+        int duration = 0;
         gettimeofday(&start_time, NULL);
 
         if (sendto(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)dest, destlen) <= 0)
@@ -86,7 +90,7 @@ int main(int argc, char *argv[])
         char buf[1024];
         struct sockaddr_in from;
         socklen_t fromlen = sizeof(from);
-        
+
         if ((recv_pkt_size = recvfrom(sockfd, buf, sizeof(buf), 0, (struct sockaddr *)&from, &fromlen)) <= 0)
         {
             fprintf(stderr, "Error receiving packet from %s\n", ip);
@@ -96,7 +100,8 @@ int main(int argc, char *argv[])
         else
         {
             gettimeofday(&end_time, NULL);
-            printf("%zd bytes received from %s (%s): icmp_seq=%d time(RTT)=%dms\n", recv_pkt_size, inet_ntoa(from.sin_addr), ip, received++, (end_time.tv_usec - start_time.tv_usec) / 1000);
+            duration = (end_time.tv_usec - start_time.tv_usec) / 1000;
+            printf("%zd bytes received from %s (%s): icmp_seq=%d time(RTT)=%dms\n", recv_pkt_size, inet_ntoa(from.sin_addr), ip, received++, (duration >= 0) ? duration : 0);
         }
         sleep(PING_SLEEP_RATE);
     }
