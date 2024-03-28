@@ -1,6 +1,6 @@
 #include "myping.h"
 
-ping_pkt_t prepare_pkt()
+static inline ping_pkt_t prepare_pkt()
 {
     ping_pkt_t pkt;
     memset(&pkt, 0, sizeof(pkt));
@@ -19,7 +19,7 @@ void intHandler(int dummy)
     pingloop = 0;
 }
 
-unsigned short checksum(void *b, int len)
+static inline unsigned short checksum(void *b, int len)
 {
     unsigned short *buf = (unsigned short *)b;
     unsigned int sum = 0;

@@ -30,10 +30,10 @@ typedef struct ping_pkt {
     char msg[PACKET_SIZE-sizeof(struct icmp)];
 } ping_pkt_t;
 
-unsigned short checksum(void *b, int len);
+static inline unsigned short checksum(void *b, int len);
 
 void intHandler(int dummy);
 
-ping_pkt_t prepare_pkt();
+static inline ping_pkt_t prepare_pkt();
 
 #endif // MYPING_H
