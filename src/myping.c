@@ -48,9 +48,10 @@ int main(int argc, char *argv[])
     char *ip = argv[1];
     struct addrinfo hints, *res;
     memset(&hints, 0, sizeof(hints));
-    hints.ai_family = AF_INET;
+    hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_RAW;
     hints.ai_protocol = IPPROTO_ICMP;
+    hints.ai_flags = AI_CANONNAME;
 
     if (getaddrinfo(ip, NULL, &hints, &res) != 0)
     {
@@ -61,7 +62,7 @@ int main(int argc, char *argv[])
     struct sockaddr_in *dest = (struct sockaddr_in *)res->ai_addr;
     socklen_t destlen = res->ai_addrlen;
 
-    int sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
+    int sockfd = socket((res->ai_family == AF_INET) ? AF_INET : AF_INET6, SOCK_RAW, IPPROTO_ICMP);
     if (sockfd < 0)
     {
         fprintf(stderr, "Error creating socket\n");
