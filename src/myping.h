@@ -18,12 +18,13 @@
 
 #define PACKET_SIZE 64
 #define PING_SLEEP_RATE 1
-#define MAX_TIMEOUT 5
+#define MAX_TIMEOUT 1
 
 int pingloop = 1;
 int transmitted = 0;
 int received = 0;
 ssize_t recv_pkt_size = 0;
+char *host;
 
 typedef struct ping_pkt {
     struct icmp hdr;
