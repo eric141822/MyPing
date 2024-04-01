@@ -19,6 +19,7 @@ void intHandler(int dummy)
     pingloop = 0;
     printf("\n--- %s ping statistics ---\n", host);
     printf("%d packets transmitted, %d received, %d%\% packet loss\n", transmitted, received, (transmitted - received) * 100 / transmitted);
+    printf("rtt min/avg/max = %.3f/%.3f/%.3f ms\n", min_time, total / received, max_time);
 }
 
 static inline unsigned short checksum(void *b, int len)
@@ -104,6 +105,9 @@ int main(int argc, char *argv[])
         {
             gettimeofday(&end_time, NULL);
             duration = (end_time.tv_usec - start_time.tv_usec) / 1000;
+            total += duration;
+            max_time = max(max_time, duration);
+            min_time = min(min_time, duration);
             printf("%zd bytes received from %s (%s): icmp_seq=%d time(RTT)=%dms\n", recv_pkt_size, inet_ntoa(from.sin_addr), res->ai_canonname, received++, (duration >= 0) ? duration : 0);
         }
         sleep(PING_SLEEP_RATE);
