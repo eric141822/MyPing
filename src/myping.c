@@ -1,5 +1,15 @@
 #include "myping.h"
 
+int pingloop = 1;
+long transmitted = 0;
+long received = 0;
+ssize_t recv_pkt_size = 0;
+char *host;
+long max_time = 0, min_time = LONG_MAX;
+float duration = .0;
+long long sum1 = 0, sum2 = 0;
+
+
 static inline ping_pkt_t prepare_pkt()
 {
     ping_pkt_t pkt;
@@ -14,12 +24,37 @@ static inline ping_pkt_t prepare_pkt()
     return pkt;
 };
 
+static long llsqrt(long long a)
+{
+	long long prev = ~((long long)1 << 63);
+	long long x = a;
+
+	if (x > 0) {
+		while (x < prev) {
+			prev = x;
+			x = (x+(a/x))/2;
+		}
+	}
+
+	return (long)x;
+}
+
+
 void intHandler(int dummy)
 {
     pingloop = 0;
+    long tdev;
+    sum1 /= received;
+    sum2 /= received;
+    tdev = llsqrt(sum2 - sum1 * sum1);
     printf("\n--- %s ping statistics ---\n", host);
-    printf("%d packets transmitted, %d received, %d%\% packet loss\n", transmitted, received, (transmitted - received) * 100 / transmitted);
-    printf("rtt min/avg/max = %.3f/%.3f/%.3f ms\n", min_time, total / received, max_time);
+    printf("%ld packets transmitted, %ld received, %ld%\% packet loss\n", transmitted, received, (transmitted - received) * 100 / transmitted);
+    printf("rtt min/avg/max/mdev = %.3lf/%.3lf/%.3lf/%ld.%03ld ms\n",
+		       (double)min_time/1000,
+		       (double)sum1/1000,
+		       (double)max_time/1000,
+		       (long)tdev/1000, (long)tdev%1000
+		       );
 }
 
 static inline unsigned short checksum(void *b, int len)
@@ -77,12 +112,12 @@ int main(int argc, char *argv[])
     setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(timeout));
 
     printf("PING %s (%s) %d bytes of data.\n", res->ai_canonname, inet_ntoa(dest->sin_addr), PACKET_SIZE);
+
     while (pingloop)
     {
         ping_pkt_t pkt = prepare_pkt();
 
         struct timeval start_time, end_time;
-        int duration = 0;
         gettimeofday(&start_time, NULL);
 
         if (sendto(sockfd, &pkt, sizeof(pkt), 0, (struct sockaddr *)dest, destlen) <= 0)
@@ -99,16 +134,17 @@ int main(int argc, char *argv[])
         if ((recv_pkt_size = recvfrom(sockfd, buf, sizeof(buf), 0, (struct sockaddr *)&from, &fromlen)) <= 0)
         {
             // timeout
-            printf("Request timeout for icmp_seq %d\n", transmitted);
+            printf("Request timeout for icmp_seq %ld\n", transmitted);
         }
         else
         {
             gettimeofday(&end_time, NULL);
-            duration = (end_time.tv_usec - start_time.tv_usec) / 1000;
-            total += duration;
+            duration = (float)(end_time.tv_usec - start_time.tv_usec);
+            sum1 += duration;
+            sum2 += duration * duration;
             max_time = max(max_time, duration);
             min_time = min(min_time, duration);
-            printf("%zd bytes received from %s (%s): icmp_seq=%d time(RTT)=%dms\n", recv_pkt_size, inet_ntoa(from.sin_addr), res->ai_canonname, received++, (duration >= 0) ? duration : 0);
+            printf("%zd bytes received from %s (%s): icmp_seq=%ld time(RTT)=%.3fms\n", recv_pkt_size, inet_ntoa(from.sin_addr), res->ai_canonname, received++, (duration >= 0) ? duration / 1000 : 0);
         }
         sleep(PING_SLEEP_RATE);
     }
