@@ -15,8 +15,7 @@
 #include <sys/time.h>
 #include <errno.h>
 #include <netdb.h>
-#include <math.h>
-#include <float.h>
+#include <limits.h>
 
 #define PACKET_SIZE 64
 #define PING_SLEEP_RATE 1
@@ -31,13 +30,6 @@
     ({ __typeof__ (a) _a = (a); \
        __typeof__ (b) _b = (b); \
      _a < _b ? _a : _b; })
-
-int pingloop = 1;
-int transmitted = 0;
-int received = 0;
-ssize_t recv_pkt_size = 0;
-char *host;
-float total = .0, max_time = .0, min_time = FLT_MAX;
 
 typedef struct ping_pkt
 {
